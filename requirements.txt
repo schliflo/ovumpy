@@ -1,0 +1,2 @@
+dataclasses_json==0.6.7
+httpx==0.28.1
