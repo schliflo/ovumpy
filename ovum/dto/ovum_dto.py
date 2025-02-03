@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from typing import Optional
+
 from dataclasses_json import dataclass_json
 
 
@@ -10,3 +12,4 @@ class OvumAddressDTO:
     min: int
     max: int
     default: int
+    label: Optional[str] = None

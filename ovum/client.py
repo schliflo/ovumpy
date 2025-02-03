@@ -32,4 +32,5 @@ class OvumClient:
     async def get_address(self, addr: int) -> OvumAddressDTO | None:
         json = await self.__read_address(addr)
         addr_dto = OvumAddressDTO.from_dict(json)
+        # TODO: map label to address
         return addr_dto or None
