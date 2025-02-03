@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ovumpy"
+version = "0.0.1"
+description = "A python package to interact with Ovum heatpumps."
+readme = "README.md"
+authors = [
+    { name = "Florian Schlittenbauer", email = "florian.schlittenbauer@gmail.com" },
+]
+license = { file = "LICENSE" }
+dependencies = [
+    "dataclasses_json>=0.6.7",
+    "httpx>=0.28.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/schliflo/ovumpy"
+Documentation = "https://github.com/schliflo/ovumpy/wiki/"
