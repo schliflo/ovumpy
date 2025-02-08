@@ -5,6 +5,7 @@ from typing import Any
 import httpx
 
 from dto.ovum_dto import OvumAddressDTO
+from const.address_mapping import address_map
 
 
 class OvumClient:
@@ -31,6 +32,12 @@ class OvumClient:
 
     async def get_address(self, addr: int) -> OvumAddressDTO | None:
         json = await self.__read_address(addr)
+        if addr in address_map:
+            json['label'] = address_map[addr]['label']
+            json['unit'] = address_map[addr]['unit']
+            for key in ['value','min','max','default']:
+                json[key] = float(json[key]) * address_map[addr]['factor']
         addr_dto = OvumAddressDTO.from_dict(json)
         # TODO: map label to address
+
         return addr_dto or None
