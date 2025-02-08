@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from itertools import count
+from typing import Any, Union
 import httpx
 
 from dto.ovum_dto import OvumAddressDTO
@@ -9,7 +10,7 @@ from const.address_mapping import address_map
 
 
 class OvumClient:
-    def __init__(self, ip: str = '10.10.20.35'):
+    def __init__(self, ip: str):
         self.__ip: str = ip
         self.__httpx_client = httpx.AsyncClient()
 
@@ -22,22 +23,47 @@ class OvumClient:
             logging.warning(f'URL {url} returned status code {response.status_code} for GET request')
             return None
 
-    async def __read_address(self, addr: int) -> Any:
-        path = f'ODJET_CGI?pread={addr}'
+    async def __read(self, addresses: Union[list[int], int] = -1) -> Any:
+        query = addresses
+        if addresses == -1:
+            query = 'all'
+        if type(addresses) is list:
+            query = ','.join(map(str, addresses))
+        path = f'ODJET_CGI?pread={query}'
         json = await self.__read_json_from_webserver(path)
-        json = json['tab_param'][0]
-        json['address'] = json.pop('addr')
-        json['default'] = json.pop('def')
+        json = json['tab_param']
+        for index, item in enumerate(json):  # rename fields
+            json[index]['address'] = int(json[index].pop('addr'))
+            json[index]['default'] = json[index].pop('def')
         return json
 
-    async def get_address(self, addr: int) -> OvumAddressDTO | None:
-        json = await self.__read_address(addr)
-        if addr in address_map:
-            json['label'] = address_map[addr]['label']
-            json['unit'] = address_map[addr]['unit']
-            for key in ['value','min','max','default']:
-                json[key] = float(json[key]) * address_map[addr]['factor']
-        addr_dto = OvumAddressDTO.from_dict(json)
-        # TODO: map label to address
+    @staticmethod
+    def __convert_to_dto(json: Any) -> OvumAddressDTO | None:
+        if json['address'] in address_map:
+            json['label'] = address_map[json['address']]['label']
+            json['unit'] = address_map[json['address']]['unit']
+            for key in ['value', 'min', 'max', 'default']:
+                json[key] = float(json[key]) * address_map[json['address']]['factor']
+            addr_dto = OvumAddressDTO.from_dict(json)
+            return addr_dto
+        return None
 
-        return addr_dto or None
+    async def get_by_address(self, addr: int) -> OvumAddressDTO | None:
+        json = await self.__read(addr)
+        return self.__convert_to_dto(json[0])
+
+    async def get_multiple_by_address(self, addresses: list[int]) -> list[OvumAddressDTO | None]:
+        json = await self.__read(addresses)
+        result = []
+        for item in json:
+            if item['address'] in address_map:
+                result.append(self.__convert_to_dto(item))
+        return result
+
+    async def get_all(self) -> list[OvumAddressDTO | None]:
+        json = await self.__read()
+        result = []
+        for item in json:
+            if item['address'] in address_map:
+                result.append(self.__convert_to_dto(item))
+        return result
